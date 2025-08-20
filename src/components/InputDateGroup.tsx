@@ -14,7 +14,7 @@ import { getDefaultClassNames } from "react-day-picker";
 interface InputDateProp {
   inputName: string;
   text: string;
-  hidden?: Boolean
+  hidden?: boolean
 }
 const priceMap: Record<string, string> = {
   // Chèn vào đây dữ liệu giá cho từng ngày theo định dạng ISO: "YYYY-MM-DD": "₫xxx"
@@ -40,7 +40,7 @@ function InputDateGroup({ inputName, text, hidden }: InputDateProp) {
               }`}
           >
             {date ? date.toLocaleDateString() : "Select date"}
-            <CalendarIcon className={`${open ? "text-orange-500" : ""}`} />
+            <CalendarIcon className={`${open ? "text-orange-500" : "0"}`} />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto overflow-hidden p-0" align="start">
