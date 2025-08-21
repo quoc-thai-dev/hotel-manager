@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import {
@@ -7,18 +7,42 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 
-import { Calendar,CalendarDayButton } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
+
 
 interface InputDateProp {
   inputName: string;
   text: string;
+  setData: (data:{in:Date,out:Date,night:number})=>void
 }
-const DateRangeGroup = ({ inputName, text }: InputDateProp) => {
+const DateRangeGroup = ({ inputName, text, setData }: InputDateProp) => {
   const [open, setOpen] = React.useState(false);
-  const [range, setRange] = React.useState<{ from?: Date; to?: Date }>({});
+  const [range, setRange] = React.useState<{ from?: Date; to?: Date }>();
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+  function daysBetween(date1?: Date, date2?: Date): number {
+    if (date1 && date2) {
+      return Math.floor(Math.abs(date2.getTime() - date1.getTime()) / MS_PER_DAY);
+    }
+    return 0
+  }
+  const handleSelect = (range: { from?: Date; to?: Date }) => {
+    setRange(range)
+  }
+  useEffect(() => {
+    if (range?.from && range?.to && range.from.getTime() !== range.to.getTime()) {
+      // User đã chọn xong range (from ≠ to)
+      console.log("User finished selecting range:", range.from, "→", range.to);
+      const diffDays = daysBetween(range.from, range.to);
+      setData({in:range.from,out:range.to,night:diffDays})
+      // alert(`Chênh lệch ngày: ${diffDays}`);
+    } else if (range?.from && range?.to && range.from.getTime() === range.to.getTime()) {
+      // Chỉ mới chọn một ngày duy nhất (from === to)
+      console.log("Chỉ mới chọn 1 ngày:", range.from);
+    }
+  }, [range]);
   const displayLabel =
     range?.from && range?.to
       ? `${format(range.from, "dd/MM")} - ${format(range.to, "dd/MM")}`
@@ -32,9 +56,8 @@ const DateRangeGroup = ({ inputName, text }: InputDateProp) => {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild className="col-span-2">
           <Button
-            className={`inline-flex hover:cursor-pointer items-center justify-between w-full h-12 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-white bg-sky-100 border-2 ${
-              open ? " border-orange-500" : " border-gray-300"
-            }`}
+            className={`inline-flex hover:cursor-pointer items-center justify-between w-full h-12 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-white bg-sky-100 border-2 ${open ? " border-orange-500" : " border-gray-300"
+              }`}
           >
             {displayLabel}
             <CalendarIcon
@@ -56,7 +79,7 @@ const DateRangeGroup = ({ inputName, text }: InputDateProp) => {
             }}
             mode="range"
             selected={range}
-            onSelect={setRange}
+            onSelect={handleSelect}
             numberOfMonths={2}
             disabled={(date) =>
               date < new Date(new Date().setDate(new Date().getDate() - 1))

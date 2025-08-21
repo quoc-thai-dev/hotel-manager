@@ -12,23 +12,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "../ui/button";
-import React from "react";
-import { cn } from "@/lib/utils";
-import { getDefaultClassNames } from "react-day-picker";
-import { da, ta } from "date-fns/locale";
+import React, { useState, type Dispatch, type SetStateAction } from "react";
+import type { ICustomer } from "@/interfaces";
+import { roomData, type RoomDataType, type RoomKey } from "@/data/data";
 const priceMap: Record<string, string> = {
   // Chèn vào đây dữ liệu giá cho từng ngày theo định dạng ISO: "YYYY-MM-DD": "₫xxx"
   // Ví dụ:
   "2025-08-20": "500k",
   // ...
 };
-const SelectRoom = () => {
+type TRoom={
+  customer:ICustomer,
+  setData:Dispatch<SetStateAction<ICustomer>>,
+}
+const SelectRoom = ({ customer, setData}:TRoom) => {
+
   const [selectedDates, setSelectedDates] = React.useState<Date[] | undefined>(
     undefined
   );
+  const [roomType, setRoomType] = useState('')
   const getPrice = (date: Date) => {
     const day = date.getDay(); // 0 = Chủ Nhật, 6 = Thứ 7
-    return day === 0 ? "500k" : "450k";
+    return [0,6,5].includes(day) ? customFormat(roomData[roomType as RoomKey].gia_ct) : customFormat(roomData[roomType as RoomKey].gia_dt);
   };
   const handleSelect: Parameters<typeof Calendar>["0"]["onSelect"] = (
     dates,
@@ -39,13 +44,30 @@ const SelectRoom = () => {
     // dates có thể là undefined hoặc Date[]
     setSelectedDates(dates);
   };
+  const handleSelectRoom=(value:RoomKey)=>{
+    setRoomType(value)
+  }
+  const formatter = new Intl.NumberFormat('en', {
+  notation: "compact",
+  compactDisplay: "short",
+  maximumFractionDigits: 1
+});
+function customFormat(num: number): string {
+  if (num < 1000000) {
+    const val = num / 1000;
+    return Number.isInteger(val) ? `${val}k` : `${val.toFixed(1)}k`;
+  }
+  // Nếu >= 1 triệu, đổi thành "1000k" thay vì "1M"
+  const val = num / 1000;
+  return Number.isInteger(val) ? `${val}k` : `${val.toFixed(1)}k`;
+}
   return (
     <>
       <hr className="my-5" />
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3 items-center">
         <div className="flex flex-col gap-2">
           <Label>Chọn hạng phòng</Label>
-          <Select>
+          <Select onValueChange={handleSelectRoom}>
             <SelectTrigger className="w-full bg-sky-100 border-2 border-gray-300">
               <SelectValue placeholder="Chọn phòng" />
             </SelectTrigger>
@@ -62,11 +84,11 @@ const SelectRoom = () => {
         </div>
         <div className="flex flex-col gap-1">
           <Label>Số phòng</Label>
-          <Input type="text" name="room" value={1} />
+          <Input type="text" name="room" defaultValue={1} />
         </div>
         <div className="flex flex-col gap-1">
           <Label>Số đêm</Label>
-          <Input type="text" name="night" value={selectedDates?.length} />
+          <Input type="text" name="night" defaultValue={1} />
         </div>
         <div className="flex flex-col gap-1">
           <Label>Giá</Label>
@@ -115,11 +137,10 @@ const SelectRoom = () => {
                         <div className="flex flex-col items-center px-2 py-1">
                           {children}
                           <span
-                            className={`mt-1 text-[.6rem] ${
-                              getPrice(day.date) === "500k"
+                            className={`mt-1 text-[.6rem] ${getPrice(day.date) === "500k"
                                 ? " text-red-700"
                                 : " text-sky-700"
-                            } `}
+                              } `}
                           >
                             {getPrice(day.date)}
                           </span>
@@ -131,7 +152,7 @@ const SelectRoom = () => {
                 disabled={(date) =>
                   date < new Date(new Date().setDate(new Date().getDate() - 1))
                 } // Vô hiệu hóa các ngày trước ngày hiện tại
-                // excludeDisabled
+              // excludeDisabled
               />
             </PopoverContent>
           </Popover>
