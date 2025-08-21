@@ -33,7 +33,7 @@ const SelectRoom = ({ customer, setData}:TRoom) => {
   const [roomType, setRoomType] = useState('')
   const getPrice = (date: Date) => {
     const day = date.getDay(); // 0 = Chủ Nhật, 6 = Thứ 7
-    return [0,6,5].includes(day) ? customFormat(roomData[roomType as RoomKey].gia_ct) : customFormat(roomData[roomType as RoomKey].gia_dt);
+    return [0,6,5].includes(day) ? formatter.format(roomData[roomType as RoomKey].gia_ct) : formatter.format(roomData[roomType as RoomKey].gia_dt);
   };
   const handleSelect: Parameters<typeof Calendar>["0"]["onSelect"] = (
     dates,
@@ -47,20 +47,11 @@ const SelectRoom = ({ customer, setData}:TRoom) => {
   const handleSelectRoom=(value:RoomKey)=>{
     setRoomType(value)
   }
-  const formatter = new Intl.NumberFormat('en', {
+const formatter = new Intl.NumberFormat("en", {
   notation: "compact",
-  compactDisplay: "short",
-  maximumFractionDigits: 1
+  minimumSignificantDigits: 3,
+  maximumSignificantDigits: 3
 });
-function customFormat(num: number): string {
-  if (num < 1000000) {
-    const val = num / 1000;
-    return Number.isInteger(val) ? `${val}k` : `${val.toFixed(1)}k`;
-  }
-  // Nếu >= 1 triệu, đổi thành "1000k" thay vì "1M"
-  const val = num / 1000;
-  return Number.isInteger(val) ? `${val}k` : `${val.toFixed(1)}k`;
-}
   return (
     <>
       <hr className="my-5" />
