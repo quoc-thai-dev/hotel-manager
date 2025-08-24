@@ -12,35 +12,57 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "../ui/button";
-import React, { useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import type { ICustomer } from "@/interfaces";
-import { roomData, type RoomDataType, type RoomKey } from "@/data/data";
+import React, {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type ChangeEventHandler,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import type { ICustomer, IRoom } from "@/interfaces";
+import { roomData as data, type RoomDataType, type RoomKey } from "@/data/data";
 const priceMap: Record<string, string> = {
   // Chèn vào đây dữ liệu giá cho từng ngày theo định dạng ISO: "YYYY-MM-DD": "₫xxx"
   // Ví dụ:
   "2025-08-20": "500k",
   // ...
 };
-type TSelectRoom={
-  customer:ICustomer,
-  setData:Dispatch<SetStateAction<ICustomer>>,
-}
-interface TRoom{
-  night:number,
-  quantity:number,
-  total:number
-}
-const SelectRoom = ({ customer, setData}:TSelectRoom) => {
-
+type TSelectRoom = {
+  customer: ICustomer;
+  setData: Dispatch<SetStateAction<ICustomer>>;
+};
+const SelectRoom = ({ customer, setData }: TSelectRoom) => {
   const [selectedDates, setSelectedDates] = React.useState<Date[] | undefined>(
     undefined
   );
-  const [roomType, setRoomType] = useState<RoomKey>('')
-
-  const getPrice = (key:RoomKey,date: Date, raw?:Boolean) => {
+  const [roomData, setRoomData] = useState<IRoom>({
+    room: "",
+    name: "",
+    quantity: 1,
+    night: 1,
+    price: 0,
+    afterPrice: 0,
+  });
+  const calcTotal = () => {
+    if (selectedDates && selectedDates?.length > 0) {
+      const price =
+        (getPrice(roomData.room, selectedDates[0], true) as number) *
+        roomData.price *
+        roomData.quantity;
+      // setRoomData((prev) => ({
+      //   ...prev,
+      //   price,
+      // }));
+    }
+  };
+  const getPrice = (key: RoomKey, date: Date, raw?: Boolean) => {
     const day = date.getDay(); // 0 = Chủ Nhật, 6 = Thứ 7
-    if(raw) return [0,6,5].includes(day) ?roomData[key].gia_ct : roomData[key].gia_dt;
-    return [0,6,5].includes(day) ? formatter.format(roomData[key].gia_ct) : formatter.format(roomData[key].gia_dt);
+    if (raw)
+      return [0, 6, 5].includes(day) ? data[key].gia_ct : data[key].gia_dt;
+    return [0, 6, 5].includes(day)
+      ? formatter.format(data[key].gia_ct)
+      : formatter.format(data[key].gia_dt);
   };
   const handleSelect: Parameters<typeof Calendar>["0"]["onSelect"] = (
     dates,
@@ -51,17 +73,41 @@ const SelectRoom = ({ customer, setData}:TSelectRoom) => {
     // dates có thể là undefined hoặc Date[]
     setSelectedDates(dates);
   };
-  const handleSelectRoom=(value:RoomKey)=>{
-    setRoomType(value)
-  }
-  useEffect(()=>{
-    
-  },[customer])
-const formatter = new Intl.NumberFormat("en", {
-  notation: "compact",
-  minimumSignificantDigits: 3,
-  maximumSignificantDigits: 3
-});
+  const handleSelectRoom = (value: RoomKey) => {
+    // setRoomType(value);
+    setRoomData((prev) => {
+      const updated = {
+        ...prev,
+        room: value,
+      };
+      const total = getPrice(value ,new Date(),true) as number *updated.quantity * updated.night
+      return {
+        ...updated,
+        price: total,
+      };
+    });
+  };
+  const formatter = new Intl.NumberFormat("en", {
+    notation: "compact",
+    minimumSignificantDigits: 3,
+    maximumSignificantDigits: 3,
+  });
+  const handleChangeInput = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // ép kiểu số, tránh NaN (nếu rỗng thì cho 0)
+    const newValue = parseInt(value) || 0;
+    setRoomData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: newValue,
+      };
+      const total = getPrice(roomData.room ,new Date(),true) as number *updated.quantity * updated.night
+      return {
+        ...updated,
+        price: total,
+      };
+    });
+  };
   return (
     <>
       <hr className="my-5" />
@@ -85,15 +131,29 @@ const formatter = new Intl.NumberFormat("en", {
         </div>
         <div className="flex flex-col gap-1">
           <Label>Số phòng</Label>
-          <Input type="number" name="room" min={1} max={30} defaultValue={1} />
+          <Input
+            type="number"
+            name="quantity"
+            min={1}
+            max={30}
+            value={roomData.quantity}
+            onChange={handleChangeInput}
+          />
         </div>
         <div className="flex flex-col gap-1">
           <Label>Số đêm</Label>
-          <Input type="number" min={1} max={30} name="night" defaultValue={1} />
+          <Input
+            type="number"
+            min={1}
+            max={30}
+            name="night"
+            value={roomData.night}
+            onChange={handleChangeInput}
+          />
         </div>
         <div className="flex flex-col gap-1">
           <Label>Giá</Label>
-          <Input type="text" name="price" />
+          <Input type="text" readOnly name="price" value={roomData.price} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="date-picker" className="px-1 col-span-1">
@@ -104,7 +164,7 @@ const formatter = new Intl.NumberFormat("en", {
               <Button
                 variant="outline"
                 id="date-picker"
-                disabled={roomType==''}
+                disabled={roomData.room == ""}
                 className="w-full bg-sky-100 justify-between font-normal cursor-pointer"
               >
                 {selectedDates && selectedDates.length > 0
@@ -129,7 +189,6 @@ const formatter = new Intl.NumberFormat("en", {
                 }}
                 components={{
                   DayButton: ({ day, children, modifiers, ...props }) => {
-
                     return (
                       <CalendarDayButton
                         day={day}
@@ -139,12 +198,13 @@ const formatter = new Intl.NumberFormat("en", {
                         <div className="flex flex-col items-center px-2 py-1">
                           {children}
                           <span
-                            className={`mt-1 text-[.6rem] ${getPrice(roomType,day.date) === "500k"
+                            className={`mt-1 text-[.6rem] ${
+                              getPrice(roomData.room, day.date) === "500k"
                                 ? " text-red-700"
                                 : " text-sky-700"
-                              } `}
+                            } `}
                           >
-                            {getPrice(roomType,day.date)}
+                            {getPrice(roomData.room, day.date)}
                           </span>
                         </div>
                       </CalendarDayButton>
@@ -154,7 +214,7 @@ const formatter = new Intl.NumberFormat("en", {
                 disabled={(date) =>
                   date < new Date(new Date().setDate(new Date().getDate() - 1))
                 } // Vô hiệu hóa các ngày trước ngày hiện tại
-              // excludeDisabled
+                // excludeDisabled
               />
             </PopoverContent>
           </Popover>

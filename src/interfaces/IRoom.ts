@@ -1,5 +1,7 @@
+import type { RoomKey } from "@/data/data"
+
 export interface IRoom {
-  room: string,
+  room: RoomKey,
   name: string,
   quantity: number,
   night: number,
