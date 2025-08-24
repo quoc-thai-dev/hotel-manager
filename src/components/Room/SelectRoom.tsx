@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "../ui/button";
-import React, { useState, type Dispatch, type SetStateAction } from "react";
+import React, { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import type { ICustomer } from "@/interfaces";
 import { roomData, type RoomDataType, type RoomKey } from "@/data/data";
 const priceMap: Record<string, string> = {
@@ -21,19 +21,26 @@ const priceMap: Record<string, string> = {
   "2025-08-20": "500k",
   // ...
 };
-type TRoom={
+type TSelectRoom={
   customer:ICustomer,
   setData:Dispatch<SetStateAction<ICustomer>>,
 }
-const SelectRoom = ({ customer, setData}:TRoom) => {
+interface TRoom{
+  night:number,
+  quantity:number,
+  total:number
+}
+const SelectRoom = ({ customer, setData}:TSelectRoom) => {
 
   const [selectedDates, setSelectedDates] = React.useState<Date[] | undefined>(
     undefined
   );
-  const [roomType, setRoomType] = useState('')
-  const getPrice = (date: Date) => {
+  const [roomType, setRoomType] = useState<RoomKey>('')
+
+  const getPrice = (key:RoomKey,date: Date, raw?:Boolean) => {
     const day = date.getDay(); // 0 = Chủ Nhật, 6 = Thứ 7
-    return [0,6,5].includes(day) ? formatter.format(roomData[roomType as RoomKey].gia_ct) : formatter.format(roomData[roomType as RoomKey].gia_dt);
+    if(raw) return [0,6,5].includes(day) ?roomData[key].gia_ct : roomData[key].gia_dt;
+    return [0,6,5].includes(day) ? formatter.format(roomData[key].gia_ct) : formatter.format(roomData[key].gia_dt);
   };
   const handleSelect: Parameters<typeof Calendar>["0"]["onSelect"] = (
     dates,
@@ -47,6 +54,9 @@ const SelectRoom = ({ customer, setData}:TRoom) => {
   const handleSelectRoom=(value:RoomKey)=>{
     setRoomType(value)
   }
+  useEffect(()=>{
+    
+  },[customer])
 const formatter = new Intl.NumberFormat("en", {
   notation: "compact",
   minimumSignificantDigits: 3,
@@ -60,7 +70,7 @@ const formatter = new Intl.NumberFormat("en", {
           <Label>Chọn hạng phòng</Label>
           <Select onValueChange={handleSelectRoom}>
             <SelectTrigger className="w-full bg-sky-100 border-2 border-gray-300">
-              <SelectValue placeholder="Chọn phòng" />
+              <SelectValue placeholder="Phòng" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="601">✨️VIP 1</SelectItem>
@@ -75,11 +85,11 @@ const formatter = new Intl.NumberFormat("en", {
         </div>
         <div className="flex flex-col gap-1">
           <Label>Số phòng</Label>
-          <Input type="text" name="room" defaultValue={1} />
+          <Input type="number" name="room" min={1} max={30} defaultValue={1} />
         </div>
         <div className="flex flex-col gap-1">
           <Label>Số đêm</Label>
-          <Input type="text" name="night" defaultValue={1} />
+          <Input type="number" min={1} max={30} name="night" defaultValue={1} />
         </div>
         <div className="flex flex-col gap-1">
           <Label>Giá</Label>
@@ -94,7 +104,8 @@ const formatter = new Intl.NumberFormat("en", {
               <Button
                 variant="outline"
                 id="date-picker"
-                className="w-full bg-sky-100 justify-between font-normal"
+                disabled={roomType==''}
+                className="w-full bg-sky-100 justify-between font-normal cursor-pointer"
               >
                 {selectedDates && selectedDates.length > 0
                   ? selectedDates.map((d) => d.getDate()).join(", ")
@@ -128,12 +139,12 @@ const formatter = new Intl.NumberFormat("en", {
                         <div className="flex flex-col items-center px-2 py-1">
                           {children}
                           <span
-                            className={`mt-1 text-[.6rem] ${getPrice(day.date) === "500k"
+                            className={`mt-1 text-[.6rem] ${getPrice(roomType,day.date) === "500k"
                                 ? " text-red-700"
                                 : " text-sky-700"
                               } `}
                           >
-                            {getPrice(day.date)}
+                            {getPrice(roomType,day.date)}
                           </span>
                         </div>
                       </CalendarDayButton>

@@ -50,11 +50,11 @@ const DateRangeGroup = ({ inputName, text, setData }: InputDateProp) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 items-center">
-      <Label className="col-span-1 text-md" htmlFor={inputName}>
+      <Label className={`col-span-1 text-md ${text==""?"hidden":""}`} htmlFor={inputName}>
         {text}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild className="col-span-2">
+        <PopoverTrigger asChild className={`${text==""?"col-span-3":"col-span-2"}`}>
           <Button
             className={`inline-flex hover:cursor-pointer items-center justify-between w-full h-12 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-white bg-sky-100 border-2 ${open ? " border-orange-500" : " border-gray-300"
               }`}
